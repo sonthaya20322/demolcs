@@ -204,17 +204,17 @@ export function ProductsPage() {
           </select>
         </div>
         <div className="table-wrap">
-          <table className="data">
+          <table className="data table-dense">
             <thead>
               <tr>
                 <th>รหัส</th>
                 <th>ชื่อ</th>
-                <th>หมวด</th>
-                <th>หน่วย</th>
+                <th className="col-hide-sm">หมวด</th>
+                <th className="col-hide-sm">หน่วย</th>
                 <th>คงเหลือ</th>
-                <th>จุดเตือน</th>
+                <th className="col-hide-sm">จุดเตือน</th>
                 <th>ราคาขาย</th>
-                <th>ต้นทุน</th>
+                <th className="col-hide-sm">ต้นทุน</th>
                 <th>สถานะ</th>
               </tr>
             </thead>
@@ -223,12 +223,12 @@ export function ProductsPage() {
                 <tr key={p.id}>
                   <td>{p.sku}</td>
                   <td>{p.name}</td>
-                  <td>{p.category_id ? catName[p.category_id] : '-'}</td>
-                  <td>{p.unit}</td>
+                  <td className="col-hide-sm">{p.category_id ? catName[p.category_id] : '-'}</td>
+                  <td className="col-hide-sm">{p.unit}</td>
                   <td>{formatQty(p.qty_on_hand)}</td>
-                  <td>{formatQty(p.reorder_level)}</td>
+                  <td className="col-hide-sm">{formatQty(p.reorder_level)}</td>
                   <td>{formatMoney(p.sell_price)}</td>
-                  <td>
+                  <td className="col-hide-sm">
                     <CostRevealButton cost={p.cost_price} />
                   </td>
                   <td>

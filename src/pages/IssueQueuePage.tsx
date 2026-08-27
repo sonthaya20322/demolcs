@@ -164,10 +164,10 @@ export function IssueQueuePage() {
       <section className="panel">
         <h2 className="panel-title">รายการคิว ({orders.length})</h2>
         <div className="table-wrap">
-          <table className="data">
+          <table className="data table-dense">
             <thead>
               <tr>
-                <th>สร้างเมื่อ</th>
+                <th className="col-hide-sm">สร้างเมื่อ</th>
                 <th>สถานะ</th>
                 <th>อ้างอิง</th>
                 <th>รายการ</th>
@@ -177,7 +177,7 @@ export function IssueQueuePage() {
             <tbody>
               {orders.map((o) => (
                 <tr key={o.id}>
-                  <td>{formatDateTime(o.created_at)}</td>
+                  <td className="col-hide-sm">{formatDateTime(o.created_at)}</td>
                   <td>
                     <StatusPill status={o.status} />
                   </td>
@@ -193,7 +193,7 @@ export function IssueQueuePage() {
                     </ul>
                   </td>
                   <td>
-                    <div className="actions">
+                    <div className="actions actions-stack-sm">
                       {(o.status === 'pending' || o.status === 'picking') && (
                         <>
                           {o.status === 'pending' && (
