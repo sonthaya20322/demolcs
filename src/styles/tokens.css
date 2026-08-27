@@ -1,0 +1,19 @@
+:root {
+  --navy: #0b1f3a;
+  --navy-deep: #071526;
+  --navy-soft: #1a3358;
+  --bg: #f5f7fa;
+  --surface: #ffffff;
+  --border: #d8dee8;
+  --text: #1c2430;
+  --muted: #5b6777;
+  --gold: #c6a35a;
+  --gold-soft: #e8d5a8;
+  --success: #2f6f4e;
+  --warning: #b86a00;
+  --danger: #a33b3b;
+  --shadow: 0 1px 2px rgba(11, 31, 58, 0.06);
+  --radius: 10px;
+  --sidebar-w: 240px;
+  --font: 'IBM Plex Sans Thai', system-ui, sans-serif;
+}

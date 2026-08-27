@@ -1,0 +1,41 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies & build
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment / secrets
+.env
+.env.*
+.env.example
+
+# Local project docs & agent rules (keep off GitHub)
+docs/
+*.md
+.cursorbussiness
+.cursor/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Test / coverage / caches
+coverage
+.nyc_output
+*.tsbuildinfo
