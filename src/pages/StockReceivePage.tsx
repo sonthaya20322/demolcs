@@ -2,18 +2,18 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { Product } from '../data/types'
 import { formatQty, friendlyError } from '../lib/format'
+import { validateReceiveDraftLines, type LineFieldErrors, type MovementDraftLine } from '../lib/issueDraft'
+import { parseNumberInput } from '../lib/numberInput'
 import { useSession } from '../session/SessionContext'
 
-interface Line {
-  product_id: string
-  qty: number
-}
+const emptyLine = (): MovementDraftLine => ({ product_id: '', qty: '' })
 
 export function StockReceivePage() {
   const { repository, bump } = useSession()
   const navigate = useNavigate()
   const [products, setProducts] = useState<Product[]>([])
-  const [lines, setLines] = useState<Line[]>([{ product_id: '', qty: 1 }])
+  const [lines, setLines] = useState<MovementDraftLine[]>([emptyLine()])
+  const [lineErrors, setLineErrors] = useState<Record<number, LineFieldErrors>>({})
   const [note, setNote] = useState('รับเข้าจากซัพพลายเออร์')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -23,22 +23,25 @@ export function StockReceivePage() {
     void repository.listProducts().then(setProducts).catch((err) => setError(friendlyError(err)))
   }, [repository])
 
-  function updateLine(index: number, patch: Partial<Line>) {
+  function updateLine(index: number, patch: Partial<MovementDraftLine>) {
     setLines((prev) => prev.map((l, i) => (i === index ? { ...l, ...patch } : l)))
   }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     if (!repository) return
-    const items = lines.filter((l) => l.product_id && l.qty > 0)
-    if (!items.length) {
-      setError('กรุณาเลือกรายการอย่างน้อย 1 รายการ')
+
+    const result = validateReceiveDraftLines(lines)
+    setLineErrors(result.lineErrors)
+    if (result.formError) {
+      setError(result.formError)
       return
     }
+
     setBusy(true)
     setError(null)
     try {
-      await repository.receiveStock(items.map((i) => ({ ...i, note })))
+      await repository.receiveStock(result.items.map((i) => ({ ...i, note })))
       bump()
       navigate('/stock')
     } catch (err) {
@@ -86,26 +89,37 @@ export function StockReceivePage() {
                   ))}
                 </select>
               </div>
-              <div className="field">
+              <div className={`field${lineErrors[index]?.qty ? ' field--invalid' : ''}`}>
                 <label>จำนวนรับเข้า</label>
                 <input
                   type="number"
-                  min={0.01}
+                  min={0}
                   step="any"
-                  required
+                  inputMode="decimal"
+                  aria-invalid={Boolean(lineErrors[index]?.qty)}
                   value={line.qty}
-                  onChange={(e) => updateLine(index, { qty: Number(e.target.value) })}
+                  onChange={(e) => {
+                    updateLine(index, { qty: parseNumberInput(e.target.value) })
+                    if (lineErrors[index]?.qty) {
+                      setLineErrors((prev) => {
+                        const next = { ...prev }
+                        delete next[index]
+                        return next
+                      })
+                    }
+                  }}
                 />
+                {lineErrors[index]?.qty && (
+                  <span className="field-error" role="alert">
+                    {lineErrors[index].qty}
+                  </span>
+                )}
               </div>
             </div>
           ))}
 
           <div className="actions" style={{ marginTop: '0.75rem' }}>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => setLines((prev) => [...prev, { product_id: '', qty: 1 }])}
-            >
+            <button type="button" className="btn btn-secondary" onClick={() => setLines((prev) => [...prev, emptyLine()])}>
               เพิ่มรายการ
             </button>
             <button className="btn" type="submit" disabled={busy}>

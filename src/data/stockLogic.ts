@@ -7,12 +7,15 @@ export function assertCanIssue(
     throw new Error('INVALID_QTY')
   }
   if (onHand < requested) {
-    throw new Error(sku ? `INSUFFICIENT_STOCK:${sku}` : 'INSUFFICIENT_STOCK')
+    if (sku) {
+      throw new Error(`INSUFFICIENT_STOCK:${sku}:${onHand}:${requested}`)
+    }
+    throw new Error('INSUFFICIENT_STOCK')
   }
 }
 
-export function applyIssue(onHand: number, requested: number): number {
-  assertCanIssue(onHand, requested)
+export function applyIssue(onHand: number, requested: number, sku?: string): number {
+  assertCanIssue(onHand, requested, sku)
   return onHand - requested
 }
 

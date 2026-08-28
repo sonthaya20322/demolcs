@@ -235,7 +235,7 @@ export function createLocalRepository(getDb: () => LocalDb, setDb: (db: LocalDb)
         for (const line of lines) {
           const p = db.products.find((x) => x.id === line.product_id)
           if (!p) throw new Error('PRODUCT_NOT_FOUND')
-          p.qty_on_hand = applyIssue(p.qty_on_hand, line.qty_requested)
+          p.qty_on_hand = applyIssue(p.qty_on_hand, line.qty_requested, p.sku)
           line.qty_issued = line.qty_requested
           db.movements.push({
             id: uid(),

@@ -6,8 +6,8 @@ describe('stockLogic', () => {
     expect(applyIssue(10, 3)).toBe(7)
   })
 
-  it('rejects over-issue', () => {
-    expect(() => assertCanIssue(2, 5, 'FT-010')).toThrow('INSUFFICIENT_STOCK:FT-010')
+  it('rejects over-issue with sku and quantities in the error', () => {
+    expect(() => assertCanIssue(2, 5, 'FT-010')).toThrow('INSUFFICIENT_STOCK:FT-010:2:5')
   })
 
   it('adds stock on receive', () => {

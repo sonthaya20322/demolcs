@@ -2,19 +2,24 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { StatusPill } from '../components/StatusPill'
 import type { IssueOrder, Product } from '../data/types'
 import { formatDateTime, formatQty, friendlyError } from '../lib/format'
+import {
+  enrichInsufficientFromOrder,
+  validateIssueDraftLines,
+  type LineFieldErrors,
+  type MovementDraftLine,
+} from '../lib/issueDraft'
+import { parseNumberInput } from '../lib/numberInput'
 import { useSession } from '../session/SessionContext'
 
-interface DraftLine {
-  product_id: string
-  qty: number
-}
+const emptyLine = (): MovementDraftLine => ({ product_id: '', qty: '' })
 
 export function IssueQueuePage() {
   const { repository, refreshKey, bump } = useSession()
   const [orders, setOrders] = useState<IssueOrder[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [refNote, setRefNote] = useState('')
-  const [lines, setLines] = useState<DraftLine[]>([{ product_id: '', qty: 1 }])
+  const [lines, setLines] = useState<MovementDraftLine[]>([emptyLine()])
+  const [lineErrors, setLineErrors] = useState<Record<number, LineFieldErrors>>({})
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -41,17 +46,21 @@ export function IssueQueuePage() {
   async function onCreate(e: FormEvent) {
     e.preventDefault()
     if (!repository) return
-    const items = lines.filter((l) => l.product_id && l.qty > 0).map((l) => ({ product_id: l.product_id, qty: l.qty }))
-    if (!items.length) {
-      setError('กรุณาเลือกรายการอย่างน้อย 1 รายการ')
+
+    const result = validateIssueDraftLines(lines, products)
+    setLineErrors(result.lineErrors)
+    if (result.formError) {
+      setError(result.formError)
       return
     }
+
     setBusy(true)
     setError(null)
     try {
-      await repository.createIssueOrder({ ref_note: refNote.trim() || undefined, items })
+      await repository.createIssueOrder({ ref_note: refNote.trim() || undefined, items: result.items })
       setRefNote('')
-      setLines([{ product_id: '', qty: 1 }])
+      setLines([emptyLine()])
+      setLineErrors({})
       bump()
     } catch (err) {
       setError(friendlyError(err))
@@ -68,7 +77,9 @@ export function IssueQueuePage() {
       await repository.completeIssueOrder(orderId)
       bump()
     } catch (err) {
-      setError(friendlyError(err))
+      const order = orders.find((o) => o.id === orderId)
+      const base = friendlyError(err)
+      setError(enrichInsufficientFromOrder(base, order?.items ?? [], products))
     } finally {
       setBusy(false)
     }
@@ -129,29 +140,37 @@ export function IssueQueuePage() {
                   ))}
                 </select>
               </div>
-              <div className="field">
+              <div className={`field${lineErrors[index]?.qty ? ' field--invalid' : ''}`}>
                 <label>จำนวนเบิก</label>
                 <input
                   type="number"
-                  min={0.01}
+                  min={0}
                   step="any"
-                  required
+                  inputMode="decimal"
+                  aria-invalid={Boolean(lineErrors[index]?.qty)}
                   value={line.qty}
-                  onChange={(e) =>
-                    setLines((prev) =>
-                      prev.map((l, i) => (i === index ? { ...l, qty: Number(e.target.value) } : l)),
-                    )
-                  }
+                  onChange={(e) => {
+                    const qty = parseNumberInput(e.target.value)
+                    setLines((prev) => prev.map((l, i) => (i === index ? { ...l, qty } : l)))
+                    if (lineErrors[index]?.qty) {
+                      setLineErrors((prev) => {
+                        const next = { ...prev }
+                        delete next[index]
+                        return next
+                      })
+                    }
+                  }}
                 />
+                {lineErrors[index]?.qty && (
+                  <span className="field-error" role="alert">
+                    {lineErrors[index].qty}
+                  </span>
+                )}
               </div>
             </div>
           ))}
           <div className="actions" style={{ marginTop: '0.75rem' }}>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => setLines((prev) => [...prev, { product_id: '', qty: 1 }])}
-            >
+            <button type="button" className="btn btn-secondary" onClick={() => setLines((prev) => [...prev, emptyLine()])}>
               เพิ่มรายการในใบเบิก
             </button>
             <button className="btn" type="submit" disabled={busy}>

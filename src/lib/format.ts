@@ -16,8 +16,19 @@ export function formatDateTime(iso: string): string {
 export function friendlyError(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err)
   if (msg.includes('INSUFFICIENT_STOCK')) {
-    const sku = msg.split(':')[1]
-    return sku ? `คงเหลือไม่พอสำหรับ ${sku}` : 'คงเหลือไม่พอ ไม่สามารถเบิกสำเร็จได้'
+    const payload = msg.includes('INSUFFICIENT_STOCK:')
+      ? msg.slice(msg.indexOf('INSUFFICIENT_STOCK:') + 'INSUFFICIENT_STOCK:'.length)
+      : ''
+    const [sku, onHandRaw, requestedRaw] = payload.split(':')
+    if (sku && onHandRaw !== undefined && requestedRaw !== undefined && onHandRaw !== '' && requestedRaw !== '') {
+      const onHand = Number(onHandRaw)
+      const requested = Number(requestedRaw)
+      if (Number.isFinite(onHand) && Number.isFinite(requested)) {
+        return `คงเหลือไม่พอสำหรับ ${sku} — เหลือ ${formatQty(onHand)} ขอเบิก ${formatQty(requested)}`
+      }
+    }
+    if (sku) return `คงเหลือไม่พอสำหรับ ${sku}`
+    return 'คงเหลือไม่พอ ไม่สามารถเบิกสำเร็จได้'
   }
   if (msg.includes('ORDER_NOT_COMPLETABLE')) return 'ใบเบิกนี้ไม่สามารถปิดงานได้'
   if (msg.includes('SESSION_EXPIRED')) return 'เซสชันหมดอายุ กรุณารีเซ็ตหรือรีเฟรชหน้า'
