@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
+import { CONTACT } from '../../data/contact'
 import { useSession } from '../../session/SessionContext'
 
 const links = [
@@ -29,6 +30,23 @@ export function AppShell({ children }: { children: ReactNode }) {
             </NavLink>
           ))}
         </nav>
+        <div className="contact-block">
+          <span className="contact-lcs">{CONTACT.brandTag}</span>
+          <p className="contact-lead">{CONTACT.lead}</p>
+          <div className="contact-links">
+            {CONTACT.channels.map((ch) => (
+              <a
+                key={ch.id}
+                className="contact-link"
+                href={ch.href}
+                {...(ch.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              >
+                <span className="contact-link-label">{ch.label}</span>
+                <span className="contact-link-value">{ch.display}</span>
+              </a>
+            ))}
+          </div>
+        </div>
       </aside>
       <div className="main">
         {mode === 'local' && (
