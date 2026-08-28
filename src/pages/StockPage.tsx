@@ -67,7 +67,7 @@ export function StockPage() {
                 <th>รหัส</th>
                 <th>ชื่อ</th>
                 <th>คงเหลือ</th>
-                <th>จุดเตือน</th>
+                <th className="col-hide-sm">จุดเตือน</th>
                 <th>สถานะ</th>
               </tr>
             </thead>
@@ -79,7 +79,7 @@ export function StockPage() {
                   <td>
                     {formatQty(p.qty_on_hand)} {p.unit}
                   </td>
-                  <td>{formatQty(p.reorder_level)}</td>
+                  <td className="col-hide-sm">{formatQty(p.reorder_level)}</td>
                   <td>
                     <StockPill qty={p.qty_on_hand} reorder={p.reorder_level} />
                   </td>
