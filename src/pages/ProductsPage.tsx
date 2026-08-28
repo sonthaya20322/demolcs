@@ -3,17 +3,28 @@ import { CostRevealButton } from '../components/CostRevealButton'
 import { StockPill } from '../components/StatusPill'
 import type { Category, Product } from '../data/types'
 import { formatMoney, formatQty, friendlyError } from '../lib/format'
+import { commitProductFormNumbers, validateProductFormNumbers } from '../lib/productForm'
+import { parseNumberInput, type NumberInputValue } from '../lib/numberInput'
 import { useSession } from '../session/SessionContext'
 
-const emptyForm = {
+const emptyForm: {
+  sku: string
+  name: string
+  category_id: string
+  unit: string
+  qty_on_hand: NumberInputValue
+  reorder_level: NumberInputValue
+  cost_price: NumberInputValue
+  sell_price: NumberInputValue
+} = {
   sku: '',
   name: '',
   category_id: '',
   unit: 'ชิ้น',
-  qty_on_hand: 0,
-  reorder_level: 5,
-  cost_price: 0,
-  sell_price: 0,
+  qty_on_hand: '',
+  reorder_level: '',
+  cost_price: '',
+  sell_price: '',
 }
 
 export function ProductsPage() {
@@ -24,6 +35,7 @@ export function ProductsPage() {
   const [form, setForm] = useState(emptyForm)
   const [newCategory, setNewCategory] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<{ sell_price?: string }>({})
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
@@ -53,20 +65,40 @@ export function ProductsPage() {
   async function onCreateProduct(e: FormEvent) {
     e.preventDefault()
     if (!repository) return
+
+    const nextFieldErrors = validateProductFormNumbers({
+      qty_on_hand: form.qty_on_hand,
+      reorder_level: form.reorder_level,
+      cost_price: form.cost_price,
+      sell_price: form.sell_price,
+    })
+    setFieldErrors(nextFieldErrors)
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setError(null)
+      requestAnimationFrame(() => {
+        document.getElementById('product-sell-price')?.focus()
+      })
+      return
+    }
+
     setBusy(true)
     setError(null)
     try {
+      const numbers = commitProductFormNumbers({
+        qty_on_hand: form.qty_on_hand,
+        reorder_level: form.reorder_level,
+        cost_price: form.cost_price,
+        sell_price: form.sell_price,
+      })
       await repository.createProduct({
         sku: form.sku.trim(),
         name: form.name.trim(),
         category_id: form.category_id || null,
         unit: form.unit.trim() || 'ชิ้น',
-        qty_on_hand: Number(form.qty_on_hand),
-        reorder_level: Number(form.reorder_level),
-        cost_price: Number(form.cost_price),
-        sell_price: Number(form.sell_price),
+        ...numbers,
       })
       setForm(emptyForm)
+      setFieldErrors({})
       bump()
     } catch (err) {
       setError(friendlyError(err))
@@ -133,9 +165,11 @@ export function ProductsPage() {
               type="number"
               min={0}
               step="any"
+              inputMode="decimal"
               value={form.qty_on_hand}
-              onChange={(e) => setForm({ ...form, qty_on_hand: Number(e.target.value) })}
+              onChange={(e) => setForm({ ...form, qty_on_hand: parseNumberInput(e.target.value) })}
             />
+            <span className="field-hint">ไม่บังคับ — ว่างได้ (บันทึกเป็น 0) ใส่ 0 ได้</span>
           </div>
           <div className="field">
             <label>จุดเตือนใกล้หมด</label>
@@ -143,9 +177,11 @@ export function ProductsPage() {
               type="number"
               min={0}
               step="any"
+              inputMode="decimal"
               value={form.reorder_level}
-              onChange={(e) => setForm({ ...form, reorder_level: Number(e.target.value) })}
+              onChange={(e) => setForm({ ...form, reorder_level: parseNumberInput(e.target.value) })}
             />
+            <span className="field-hint">ไม่บังคับ — ว่างได้ (บันทึกเป็น 0)</span>
           </div>
           <div className="field">
             <label>ราคาทุน</label>
@@ -153,19 +189,44 @@ export function ProductsPage() {
               type="number"
               min={0}
               step="any"
+              inputMode="decimal"
               value={form.cost_price}
-              onChange={(e) => setForm({ ...form, cost_price: Number(e.target.value) })}
+              onChange={(e) => setForm({ ...form, cost_price: parseNumberInput(e.target.value) })}
             />
+            <span className="field-hint">ไม่บังคับ — เปิดรหัสก่อน ใส่ทุนทีหลังได้</span>
           </div>
-          <div className="field">
-            <label>ราคาขาย</label>
+          <div className={`field${fieldErrors.sell_price ? ' field--invalid' : ''}`}>
+            <label htmlFor="product-sell-price">
+              ราคาขาย <span className="field-required">*</span>
+            </label>
             <input
+              id="product-sell-price"
               type="number"
               min={0}
               step="any"
+              inputMode="decimal"
+              aria-invalid={Boolean(fieldErrors.sell_price)}
+              aria-describedby={fieldErrors.sell_price ? 'product-sell-price-error' : undefined}
               value={form.sell_price}
-              onChange={(e) => setForm({ ...form, sell_price: Number(e.target.value) })}
+              onChange={(e) => {
+                const sell_price = parseNumberInput(e.target.value)
+                setForm({ ...form, sell_price })
+                if (fieldErrors.sell_price) {
+                  setFieldErrors((prev) => {
+                    const next = { ...prev }
+                    delete next.sell_price
+                    return next
+                  })
+                }
+              }}
             />
+            {fieldErrors.sell_price ? (
+              <span id="product-sell-price-error" className="field-error" role="alert">
+                {fieldErrors.sell_price}
+              </span>
+            ) : (
+              <span className="field-hint">บังคับกรอก — ใส่ 0 ได้ถ้าตั้งใจเป็นศูนย์</span>
+            )}
           </div>
           <div className="actions">
             <button className="btn" type="submit" disabled={busy}>
