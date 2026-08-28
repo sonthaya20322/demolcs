@@ -21,11 +21,14 @@ interface SessionContextValue {
   sessionId: string
   repository: DemoRepository | null
   canRetryCloud: boolean
+  /** เหตุผลบูต/retry คลาวด์ล้ม (จาก BootResult) */
+  bootError: string | null
   refreshKey: number
   bump: () => void
   resetDemo: () => Promise<void>
   retryCloud: () => Promise<void>
   busy: boolean
+  /** error จากรีเซ็ตหรือ action อื่น */
   error: string | null
 }
 
@@ -97,6 +100,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       sessionId: boot?.sessionId ?? '',
       repository: boot?.repository ?? null,
       canRetryCloud: boot?.canRetryCloud ?? false,
+      bootError: boot?.bootError ?? null,
       refreshKey,
       bump,
       resetDemo,

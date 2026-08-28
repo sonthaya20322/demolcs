@@ -22,9 +22,25 @@ export interface BootResult {
   sessionId: string
   repository: DemoRepository
   canRetryCloud: boolean
+  /** เหตุผลที่ fallback เป็น local (ว่างเมื่อคลาวด์สำเร็จหรือเลือก local เพราะไม่มี env) */
+  bootError: string | null
 }
 
 let localDbHolder: LocalDb | null = null
+
+export function formatBootError(err: unknown): string {
+  if (err && typeof err === 'object' && 'message' in err) {
+    const msg = String((err as { message: unknown }).message || '')
+    const details =
+      'details' in err && (err as { details: unknown }).details
+        ? String((err as { details: unknown }).details)
+        : ''
+    if (msg && details) return `${msg} — ${details}`
+    if (msg) return msg
+  }
+  if (err instanceof Error && err.message) return err.message
+  return 'เชื่อมต่อคลาวด์ไม่สำเร็จ'
+}
 
 function getLocalDb(): LocalDb {
   if (!localDbHolder) {
@@ -39,7 +55,7 @@ function setLocalDb(db: LocalDb): void {
   saveLocalDb(db)
 }
 
-function bootLocal(): BootResult {
+function bootLocal(bootError: string | null = null): BootResult {
   const existing = loadLocalDb()
   if (existing && new Date(existing.expires_at).getTime() > Date.now()) {
     localDbHolder = existing
@@ -55,12 +71,13 @@ function bootLocal(): BootResult {
     sessionId: localDbHolder.session_id,
     repository: createLocalRepository(getLocalDb, setLocalDb),
     canRetryCloud: isSupabaseConfigured(),
+    bootError,
   }
 }
 
 export async function bootstrapSession(): Promise<BootResult> {
   if (!isSupabaseConfigured()) {
-    return bootLocal()
+    return bootLocal(null)
   }
 
   try {
@@ -78,6 +95,7 @@ export async function bootstrapSession(): Promise<BootResult> {
           sessionId: storedId,
           repository: repo,
           canRetryCloud: true,
+          bootError: null,
         }
       }
     }
@@ -91,15 +109,16 @@ export async function bootstrapSession(): Promise<BootResult> {
       sessionId: newId,
       repository: createCloudRepository(sessionRef),
       canRetryCloud: true,
+      bootError: null,
     }
-  } catch {
-    return bootLocal()
+  } catch (err) {
+    return bootLocal(formatBootError(err))
   }
 }
 
 export async function retryCloudBootstrap(): Promise<BootResult> {
   if (!isSupabaseConfigured()) {
-    return bootLocal()
+    return bootLocal('ยังไม่ได้ตั้งค่า Supabase บนเซิร์ฟเวอร์นี้')
   }
   try {
     const newId = await createCloudSessionWithRetry(2)
@@ -113,9 +132,10 @@ export async function retryCloudBootstrap(): Promise<BootResult> {
       sessionId: newId,
       repository: createCloudRepository(sessionRef),
       canRetryCloud: true,
+      bootError: null,
     }
-  } catch {
-    return bootLocal()
+  } catch (err) {
+    return bootLocal(formatBootError(err))
   }
 }
 
@@ -128,6 +148,7 @@ export async function resetCurrentSession(current: BootResult): Promise<BootResu
       ...current,
       sessionId: newId,
       repository: createLocalRepository(getLocalDb, setLocalDb),
+      bootError: current.bootError,
     }
   }
   const sessionRef = { id: newId }
@@ -135,5 +156,6 @@ export async function resetCurrentSession(current: BootResult): Promise<BootResu
     ...current,
     sessionId: newId,
     repository: createCloudRepository(sessionRef),
+    bootError: null,
   }
 }

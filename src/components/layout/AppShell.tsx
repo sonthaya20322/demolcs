@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import { CONTACT } from '../../data/contact'
 import { useSession } from '../../session/SessionContext'
+import { ContactFab } from './ContactFab'
+import { SettingsSheet } from './SettingsSheet'
 
 const links = [
   { to: '/', label: 'ภาพรวมวันนี้', shortLabel: 'ภาพรวม', end: true },
@@ -17,7 +19,7 @@ const SCROLL_DELTA = 14
 const EXPAND_COOLDOWN_MS = 280
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { mode, canRetryCloud, retryCloud, resetDemo, busy, sessionId } = useSession()
+  const { mode, sessionId } = useSession()
   const sessionShort = sessionId ? `${sessionId.slice(0, 8)}…` : '-'
   const modeLabel = mode === 'cloud' ? 'คลาวด์' : 'บนอุปกรณ์'
   const contentRef = useRef<HTMLDivElement>(null)
@@ -25,6 +27,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const chromeCollapsedRef = useRef(false)
   const expandLockedUntil = useRef(0)
   const [chromeCollapsed, setChromeCollapsed] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   useEffect(() => {
     const el = contentRef.current
@@ -54,7 +57,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       const top = el.scrollTop
       const delta = top - lastScrollTop.current
 
-      // ถึงบนสุด — โชว์ chrome เสมอ
       if (top <= 8) {
         applyCollapsed(false)
         lastScrollTop.current = top
@@ -66,7 +68,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       if (delta > 0 && top > 24) {
         applyCollapsed(true)
       } else if (delta < 0) {
-        // cooldown ทิศเดียว: บล็อกแค่ expand ทันทีหลังยุบ
         if (performance.now() < expandLockedUntil.current) {
           lastScrollTop.current = top
           return
@@ -92,9 +93,26 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-name">DemoLCS</div>
-          <div className="brand-sub">LimitCode Studio · หลังบ้านอะไหล่ Demo</div>
+        <div className="brand-row">
+          <div className="brand">
+            <div className="brand-name">DemoLCS</div>
+            <div className="brand-sub">LimitCode Studio · หลังบ้านอะไหล่ Demo</div>
+          </div>
+          <button
+            type="button"
+            className="settings-trigger"
+            aria-label="ตั้งค่าเดโม"
+            aria-haspopup="dialog"
+            aria-expanded={settingsOpen}
+            onClick={() => setSettingsOpen(true)}
+          >
+            <svg className="settings-trigger-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+              <path
+                fill="currentColor"
+                d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.1 7.1 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.9 2h-3.8a.5.5 0 0 0-.49.42l-.36 2.54c-.59.24-1.13.55-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.48a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.83 14.58a.5.5 0 0 0-.12.64l1.92 3.32c.14.24.43.34.68.22l2.39-.96c.5.39 1.04.7 1.63.94l.36 2.54c.05.24.25.42.49.42h3.8c.24 0 .44-.18.49-.42l.36-2.54c.59-.24 1.13-.55 1.63-.94l2.39.96c.25.12.54.02.68-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z"
+              />
+            </svg>
+          </button>
         </div>
         <nav className="nav" aria-label="เมนูหลัก">
           {links.map((l) => (
@@ -104,10 +122,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </NavLink>
           ))}
         </nav>
-        <div
-          className={`contact-block${chromeCollapsed ? ' contact-block--collapsed' : ''}`}
-          aria-hidden={chromeCollapsed}
-        >
+        <div className="contact-block contact-block--sidebar">
           <span className="contact-lcs">{CONTACT.brandTag}</span>
           <p className="contact-lead">{CONTACT.lead}</p>
           <div className="contact-links">
@@ -116,7 +131,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={ch.id}
                 className="contact-link"
                 href={ch.href}
-                tabIndex={chromeCollapsed ? -1 : undefined}
                 {...(ch.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
               >
                 <span className="contact-link-label">{ch.label}</span>
@@ -128,18 +142,15 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
       <div className="main">
         {mode === 'local' && (
-          <div className="banner">
-            <span className="banner-text">โหมดสาธิตบนอุปกรณ์นี้ — ข้อมูลจะไม่ซิงก์ข้ามเครื่อง</span>
-            {canRetryCloud && (
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm banner-action"
-                disabled={busy}
-                onClick={() => void retryCloud()}
-              >
-                เชื่อมต่อโหมดคลาวด์อีกครั้ง
-              </button>
-            )}
+          <div className="banner banner--slim">
+            <span className="banner-text">ใช้งานบนเครื่องนี้ — ข้อมูลไม่ซิงก์</span>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm banner-action"
+              onClick={() => setSettingsOpen(true)}
+            >
+              ตั้งค่า
+            </button>
           </div>
         )}
         <header
@@ -157,20 +168,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               </span>
             </div>
           </div>
-          <button
-            type="button"
-            className="btn btn-secondary topbar-reset"
-            disabled={busy || chromeCollapsed}
-            tabIndex={chromeCollapsed ? -1 : undefined}
-            onClick={() => void resetDemo()}
-          >
-            รีเซ็ตข้อมูลตัวอย่าง
-          </button>
         </header>
         <div className="content" ref={contentRef}>
           {children}
         </div>
       </div>
+
+      <ContactFab />
+      <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   )
 }
