@@ -1,4 +1,4 @@
--- DemoDainamo MVP schema + RPCs
+-- DemoLCS MVP schema + RPCs
 -- Apply in Supabase SQL Editor (or supabase db push)
 
 create extension if not exists "pgcrypto";

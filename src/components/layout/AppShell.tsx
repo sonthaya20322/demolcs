@@ -19,8 +19,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-name">DemoDainamo</div>
-          <div className="brand-sub">หลังบ้านอะไหล่รถ · Demo</div>
+          <div className="brand-name">DemoLCS</div>
+          <div className="brand-sub">LimitCode Studio · หลังบ้านอะไหล่ Demo</div>
         </div>
         <nav className="nav" aria-label="เมนูหลัก">
           {links.map((l) => (

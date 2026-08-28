@@ -14,8 +14,8 @@ import {
   type LocalDb,
 } from '../data/localStore'
 
-const SESSION_KEY = 'demodainamo_session_id'
-const MODE_KEY = 'demodainamo_mode'
+const SESSION_KEY = 'demolcs_session_id'
+const MODE_KEY = 'demolcs_mode'
 
 export interface BootResult {
   mode: DemoMode

@@ -12,7 +12,7 @@ function AppRoutes() {
   const { ready, repository, error } = useSession()
 
   if (!ready) {
-    return <div className="loading">กำลังเตรียมร้านตัวอย่าง DemoDainamo...</div>
+    return <div className="loading">กำลังเตรียมร้านตัวอย่าง DemoLCS...</div>
   }
 
   if (!repository) {

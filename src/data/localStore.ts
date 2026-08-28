@@ -16,7 +16,7 @@ import type {
 } from './types'
 import { buildSeedData } from './seedData'
 
-const STORAGE_KEY = 'demodainamo_local_db_v1'
+const STORAGE_KEY = 'demolcs_local_db_v1'
 
 export interface LocalDb {
   session_id: string
