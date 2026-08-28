@@ -10,6 +10,7 @@ import {
 import type { DemoMode, DemoRepository } from '../data/types'
 import {
   bootstrapSession,
+  formatBootError,
   resetCurrentSession,
   retryCloudBootstrap,
   type BootResult,
@@ -73,7 +74,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setBoot(next)
       bump()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'รีเซ็ตไม่สำเร็จ')
+      setError(formatBootError(err) || 'รีเซ็ตไม่สำเร็จ')
     } finally {
       setBusy(false)
     }
@@ -87,7 +88,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setBoot(next)
       bump()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'เชื่อมต่อคลาวด์ไม่สำเร็จ')
+      setError(formatBootError(err) || 'เชื่อมต่อคลาวด์ไม่สำเร็จ')
     } finally {
       setBusy(false)
     }

@@ -60,7 +60,7 @@ create table if not exists public.issue_orders (
 create table if not exists public.issue_order_items (
   id uuid primary key default gen_random_uuid(),
   issue_order_id uuid not null references public.issue_orders(id) on delete cascade,
-  product_id uuid not null references public.products(id) on delete restrict,
+  product_id uuid not null references public.products(id) on delete cascade,
   qty_requested numeric(12,2) not null check (qty_requested > 0),
   qty_issued numeric(12,2) not null default 0
 );

@@ -19,9 +19,12 @@ const SCROLL_DELTA = 14
 const EXPAND_COOLDOWN_MS = 280
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { mode, sessionId } = useSession()
+  const { mode, sessionId, bootError } = useSession()
   const sessionShort = sessionId ? `${sessionId.slice(0, 8)}…` : '-'
   const modeLabel = mode === 'cloud' ? 'คลาวด์' : 'บนอุปกรณ์'
+  const localBannerText = bootError
+    ? 'คลาวด์ล้ม — ใช้บนเครื่องชั่วคราว'
+    : 'ใช้งานบนเครื่องนี้ — ข้อมูลไม่ซิงก์'
   const contentRef = useRef<HTMLDivElement>(null)
   const lastScrollTop = useRef(0)
   const chromeCollapsedRef = useRef(false)
@@ -143,7 +146,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="main">
         {mode === 'local' && (
           <div className="banner banner--slim">
-            <span className="banner-text">ใช้งานบนเครื่องนี้ — ข้อมูลไม่ซิงก์</span>
+            <span className="banner-text">{localBannerText}</span>
             <button
               type="button"
               className="btn btn-secondary btn-sm banner-action"
